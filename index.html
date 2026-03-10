@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dynamic Resume Builder</title>
+  <style>
+    :root{
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --muted: #6b7280;
+      --accent: #2563eb;
+      --accent-2: #10b981;
+      --text: #0f172a;
+      --glass: rgba(255,255,255,0.6);
+      --card-shadow: 0 6px 18px rgba(2,6,23,0.08);
+      --radius: 12px;
+      --transition: 220ms cubic-bezier(.2,.9,.3,1);
+    }
+
+    body.theme-corporate {
+      --bg: #f3f6fb;
+      --panel: #ffffff;
+      --muted: #475569;
+      --accent: #0f172a;
+      --accent-2: #0ea5a3;
+      --text: #071135;
+    }
+    body.theme-creative {
+      --bg: linear-gradient(135deg,#fdf6fb 0%, #f0f9ff 100%);
+      --panel: #fff;
+      --muted: #4b5563;
+      --accent: #7c3aed;
+      --accent-2: #ef4444;
+      --text: #0b1220;
+      --card-shadow: 0 10px 30px rgba(124,58,237,0.12);
+    }
+    body.theme-minimal {
+      --bg: #ffffff;
+      --panel: #f8fafc;
+      --muted: #6b7280;
+      --accent: #111827;
+      --accent-2: #4b5563;
+      --text: #0f172a;
+      --card-shadow: 0 4px 10px rgba(2,6,23,0.06);
+    }
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .wrap{
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:28px;
+      max-width:1200px;
+      margin:36px auto;
+      padding:24px;
+    }
+
+    .panel{
+      background: var(--panel);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      padding:18px;
+      overflow:auto;
+      min-height:520px;
+    }
+    h2{ margin:6px 0 14px; font-size:18px }
+    .controls { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px }
+    .btn{
+      background:transparent;
+      border:1px solid #e6e9ef;
+      padding:8px 10px;
+      border-radius:10px;
+      cursor:pointer;
+      transition: all var(--transition);
+      font-size:13px;
+    }
+    .btn.active { background:var(--accent); color:#fff; border-color:var(--accent) }
+    .btn.ghost { background:transparent; border-color:transparent; color:var(--muted) }
+
+    form .field { margin-bottom:10px; }
+    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px }
+    input[type="text"], textarea, input[type="email"]{
+      width:100%;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid #eef2f7;
+      background:transparent;
+      outline:none;
+      transition:box-shadow var(--transition), transform var(--transition);
+      font-size:14px;
+    }
+    input[type="text"]:focus, textarea:focus { box-shadow:0 6px 18px rgba(37,99,235,0.08); transform:translateY(-1px) }
+    textarea{ resize:vertical; min-height:72px; }
+
+    .skills-input { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px; border-radius:8px; border:1px dashed #e6eef9; min-height:44px }
+    .skill-chip { background:#eef2ff; color:var(--accent); padding:6px 8px; border-radius:999px; font-size:13px; display:inline-flex; gap:6px; align-items:center }
+    .skill-chip button { border:none; background:transparent; cursor:pointer; font-weight:600; color:var(--accent); opacity:0.7 }
+
+    .preview-wrap{
+      background:linear-gradient(180deg, rgba(255,255,255,0.7), rgba(255,255,255,0.85));
+      border-radius: var(--radius);
+      padding:20px;
+      box-shadow:var(--card-shadow);
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      min-height:520px;
+    }
+    .resume{
+      width:720px;
+      max-width:100%;
+      background:var(--panel);
+      border-radius:10px;
+      padding:22px;
+      box-shadow:0 8px 30px rgba(2,6,23,0.06);
+      transition: transform var(--transition), opacity var(--transition);
+    }
+    .r-header{ display:flex; justify-content:space-between; align-items:start; gap:18px }
+    .r-left{ flex:1 }
+    .r-name{ font-size:22px; font-weight:700; margin:0 0 4px }
+    .r-title{ color:var(--muted); margin:0 0 8px; font-weight:600 }
+
+    .contact{ display:flex; gap:14px; flex-wrap:wrap; font-size:13px; color:var(--muted) }
+
+    hr.sep{ border:none; height:1px; background:linear-gradient(90deg, transparent, #e6eef9, transparent); margin:14px 0 }
+
+    .section{ margin-bottom:12px; transition: opacity var(--transition), transform var(--transition) }
+    .section h3{ margin:0 0 8px; font-size:14px; color:var(--accent) }
+    .bullet{ margin:6px 0; color:var(--muted); font-size:14px; }
+
+    .skill-list{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px }
+    .skill-pill{ background:var(--accent-2); color:#fff; padding:6px 8px; font-size:13px; border-radius:999px }
+
+
+    .pulse {
+      animation: pulseUpdate 420ms cubic-bezier(.2,.9,.3,1);
+    }
+    @keyframes pulseUpdate {
+      0% { transform:translateY(6px); opacity:0 }
+      60% { transform:translateY(-4px); opacity:1 }
+      100% { transform:translateY(0); opacity:1 }
+    }
+
+    .controls-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px }
+
+    .overlay{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(3,7,18,0.45); z-index:60;
+    }
+    .overlay.active{ display:flex }
+    .modal{
+      background:var(--panel); padding:20px; border-radius:12px; width:360px; box-shadow:var(--card-shadow); text-align:center;
+    }
+    .progress{ height:8px; background:#eef2f7; border-radius:8px; overflow:hidden; margin-top:12px }
+    .bar{ height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); transition:width 1s ease; }
+
+    @media (max-width:920px){
+      .wrap{ grid-template-columns: 1fr; padding:14px }
+      .preview-wrap{ order:2; margin-top:12px; }
+    }
+  </style>
+</head>
+<body class="theme-minimal">
+  <div class="wrap">
+    <div class="panel" id="formPanel">
+      <h2>Resume Builder</h2>
+
+      <div class="controls" aria-hidden>
+        <button class="btn active" data-theme="theme-minimal">Minimal</button>
+        <button class="btn" data-theme="theme-corporate">Corporate</button>
+        <button class="btn" data-theme="theme-creative">Creative</button>
+
+        <div style="margin-left:auto"></div>
+      </div>
+
+      <form id="resumeForm" autocomplete="off" onsubmit="return false;">
+        <div class="field">
+          <label for="name">Full name</label>
+          <input id="name" type="text" placeholder="Jane Doe" />
+        </div>
+        <div class="field">
+          <label for="title">Professional title</label>
+          <input id="title" type="text" placeholder="Product Designer" />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="jane@example.com" />
+        </div>
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input id="phone" type="text" placeholder="+1 555 555 555" />
+        </div>
+
+        <div class="field">
+          <label for="summary">Profile summary</label>
+          <textarea id="summary" placeholder="Short summary or elevator pitch..."></textarea>
+        </div>
+
+        <div class="field">
+          <label>Skills (type and press Enter)</label>
+          <div class="skills-input" id="skillsInput">
+            <input id="skillText" type="text" placeholder="e.g., React" style="border:none; min-width:120px; padding:6px;">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="expCompany">Experience — Company</label>
+          <input id="expCompany" type="text" placeholder="Company name" />
+        </div>
+        <div class="field">
+          <label for="expRole">Role & period</label>
+          <input id="expRole" type="text" placeholder="Senior Engineer — 2020–Present" />
+        </div>
+        <div class="field">
+          <label for="expDesc">Responsibilities (comma separated)</label>
+          <input id="expDesc" type="text" placeholder="Led UI revamp, Mentored 4 engineers..." />
+        </div>
+
+        <div class="controls-footer">
+          <div style="display:flex; gap:8px;">
+            <button class="btn ghost" id="resetBtn" type="button">Reset</button>
+            <button class="btn" id="sampleBtn" type="button">Load sample</button>
+          </div>
+          <div>
+            <button class="btn" id="downloadBtn" type="button">Download preview</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="resume" id="preview">
+        <div class="r-header">
+          <div class="r-left">
+            <h1 class="r-name" id="r-name">Your Name</h1>
+            <div class="r-title" id="r-title">Professional Title</div>
+            <div class="contact" id="r-contact">
+              <div id="r-email">email@example.com</div>
+              <div id="r-phone">+1 555 555 555</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:700; color:var(--accent)" id="r-tag">Resume</div>
+            <div style="color:var(--muted); margin-top:6px; font-size:13px" id="r-location">Location</div>
+          </div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="section" id="r-summary-section">
+          <h3>Summary</h3>
+          <div class="bullet" id="r-summary">A concise, strong professional summary will appear here as you type.</div>
+        </div>
+
+        <div class="section" id="r-exp-section">
+          <h3>Experience</h3>
+          <div style="font-weight:600" id="r-exp-company">Company</div>
+          <div style="color:var(--muted); font-size:13px; margin-bottom:6px" id="r-exp-role">Role & period</div>
+          <div id="r-exp-items" class="bullet">Responsibility 1. Responsibility 2.</div>
+        </div>
+
+        <div class="section" id="r-skills-section">
+          <h3>Skills</h3>
+          <div id="r-skills" class="skill-list">
+            <div class="skill-pill">Communication</div>
+            <div class="skill-pill">Problem Solving</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="overlay" id="overlay">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div id="modalText">Preparing your download...</div>
+      <div class="progress" aria-hidden>
+        <div class="bar" id="progressBar"></div>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn" id="closeModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => document.querySelectorAll(sel);
+    const inputs = {
+      name: $('#name'),
+      title: $('#title'),
+      email: $('#email'),
+      phone: $('#phone'),
+      summary: $('#summary'),
+      expCompany: $('#expCompany'),
+      expRole: $('#expRole'),
+      expDesc: $('#expDesc'),
+      skillText: $('#skillText'),
+      skillsInput: $('#skillsInput')
+    };
+
+    const previewEls = {
+      rName: $('#r-name'),
+      rTitle: $('#r-title'),
+      rEmail: $('#r-email'),
+      rPhone: $('#r-phone'),
+      rSummary: $('#r-summary'),
+      rExpCompany: $('#r-exp-company'),
+      rExpRole: $('#r-exp-role'),
+      rExpItems: $('#r-exp-items'),
+      rSkills: $('#r-skills')
+    };
+    document.querySelectorAll('.controls .btn[data-theme]').forEach(btn=>{
+      btn.addEventListener('click', e=>{
+        document.querySelectorAll('.controls .btn[data-theme]').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        const theme = btn.dataset.theme;
+        document.body.classList.remove('theme-minimal','theme-corporate','theme-creative');
+        document.body.classList.add(theme);
+        pulse($('#preview'));
+      });
+    });
+    function setAndPulse(el, text){
+      if(!el) return;
+      el.textContent = text || '';
+      pulse(el);
+    }
+    function pulse(el){
+      el.classList.remove('pulse');
+      void el.offsetWidth;
+      el.classList.add('pulse');
+      setTimeout(()=>el.classList.remove('pulse'),600);
+    }
+    let debounceTimer;
+    function scheduleUpdate(){
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(updatePreview, 120);
+    }
+    function updatePreview(){
+      setAndPulse(previewEls.rName, inputs.name.value || 'Your Name');
+      setAndPulse(previewEls.rTitle, inputs.title.value || 'Professional Title');
+      setAndPulse(previewEls.rEmail, inputs.email.value || 'email@example.com');
+      setAndPulse(previewEls.rPhone, inputs.phone.value || '+1 555 555 555');
+      setAndPulse(previewEls.rSummary, inputs.summary.value || 'A concise, strong professional summary will appear here as you type.');
+
+      setAndPulse(previewEls.rExpCompany, inputs.expCompany.value || 'Company');
+      setAndPulse(previewEls.rExpRole, inputs.expRole.value || 'Role & period');
+
+      const desc = inputs.expDesc.value ? inputs.expDesc.value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+      previewEls.rExpItems.innerHTML = desc.length ? desc.map(d=>`• ${escapeHtml(d)}`).join('<br>') : 'Responsibilities will appear here as you type.';
+      pulse(previewEls.rExpItems);
+    }
+
+    function escapeHtml(s){
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    Object.values(inputs).forEach(el=>{
+      if(!el) return;
+      el.addEventListener('input', scheduleUpdate);
+    });
+    const skills = [];
+    inputs.skillText.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' || e.key === ','){
+        e.preventDefault();
+        const v = inputs.skillText.value.trim().replace(/,+$/,'');
+        if(v) addSkill(v);
+        inputs.skillText.value = '';
+      } else if(e.key === 'Escape') {
+        inputs.skillText.value = '';
+      }
+    });
+
+    function addSkill(v){
+      if(!v) return;
+      if(skills.includes(v.toLowerCase())) return;
+      skills.push(v.toLowerCase());
+      renderSkills();
+      scheduleUpdate();
+    }
+    function removeSkill(index){
+      skills.splice(index,1);
+      renderSkills();
+      scheduleUpdate();
+    }
+    function renderSkills(){
+      previewEls.rSkills.innerHTML = '';
+      inputs.skillsInput.querySelectorAll('.skill-chip').forEach(n=>n.remove());
+      skills.forEach((s,i)=>{
+        const chip = document.createElement('span');
+        chip.className = 'skill-chip';
+        chip.innerHTML = `<span style="font-size:13px;color:var(--accent)">${escapeHtml(s)}</span><button aria-label="remove skill" data-i="${i}">✕</button>`;
+        inputs.skillsInput.insertBefore(chip, inputs.skillText);
+        const pill = document.createElement('div');
+        pill.className = 'skill-pill';
+        pill.textContent = s;
+        previewEls.rSkills.appendChild(pill);
+        chip.querySelector('button').addEventListener('click', () => removeSkill(i));
+      });
+    }
+    $('#resetBtn').addEventListener('click', ()=>{
+      $('#resumeForm').reset();
+      skills.length = 0;
+      renderSkills();
+      updatePreview();
+    });
+
+    $('#sampleBtn').addEventListener('click', ()=>{
+      inputs.name.value = "Harshitha J";
+      inputs.title.value = "Frontend Developer";
+      inputs.email.value = "harshitha@example.com";
+      inputs.phone.value = "+91 98765 43210";
+      inputs.summary.value = "Front-end developer with 4+ years building responsive UI & accessible web apps. Passionate about performance and delightful UX.";
+      inputs.expCompany.value = "Tech Solutions Inc.";
+      inputs.expRole.value = "Senior Frontend Engineer — 2021–Present";
+      inputs.expDesc.value = "Led UI architecture, Implemented design system, Improved performance by 30%";
+      skills.length = 0;
+      ['React','CSS','Accessibility','TypeScript'].forEach(s=>addSkill(s));
+      renderSkills();
+      updatePreview();
+    });
+    const overlay = $('#overlay');
+    const progressBar = $('#progressBar');
+    $('#downloadBtn').addEventListener('click', ()=>{
+      overlay.classList.add('active');
+      progressBar.style.width = '8%';
+      $('#modalText').textContent = 'Simulating export to PDF...';
+      setTimeout(()=> progressBar.style.width = '48%', 300);
+      setTimeout(()=> progressBar.style.width = '86%', 900);
+      setTimeout(()=> {
+        progressBar.style.width = '100%';
+        $('#modalText').textContent = 'Done — preview ready (simulation).';
+      }, 1700);
+    });
+    $('#closeModal').addEventListener('click', ()=> overlay.classList.remove('active'));
+    overlay.addEventListener('click', (e)=> { if(e.target === overlay) overlay.classList.remove('active') });
+    updatePreview();
+    document.getElementById('resumeForm').addEventListener('submit', (e)=> e.preventDefault());
+  </script>
+</body>
+</html>
